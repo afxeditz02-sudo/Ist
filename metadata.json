@@ -1,0 +1,6 @@
+{
+  "name": "InstaClone",
+  "description": "A minimalist photo-sharing platform for uploading and browsing high-quality posts.",
+  "requestFramePermissions": ["camera"],
+  "majorCapabilities": ["social"]
+}
