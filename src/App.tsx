@@ -7,7 +7,32 @@ import { useState, useEffect } from 'react';
 import Navbar from './components/Navbar';
 import PostCard from './components/PostCard';
 import CreatePost from './components/CreatePost';
-import { Post } from './types';
+import Stories from './components/Stories';
+import { Post, Story } from './types';
+
+const INITIAL_STORIES: Story[] = [
+  {
+    id: 's1',
+    imageUrl: 'https://images.unsplash.com/photo-1513364776144-60967b0f800f?q=80&w=200&auto=format&fit=crop',
+    author: { name: 'art_gallery', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Art' },
+    createdAt: Date.now(),
+    isViewed: false,
+  },
+  {
+    id: 's2',
+    imageUrl: 'https://images.unsplash.com/photo-1493246507139-91e8bef99c02?q=80&w=200&auto=format&fit=crop',
+    author: { name: 'traveler', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Travel' },
+    createdAt: Date.now(),
+    isViewed: false,
+  },
+  {
+    id: 's3',
+    imageUrl: 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?q=80&w=200&auto=format&fit=crop',
+    author: { name: 'foodie', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Food' },
+    createdAt: Date.now(),
+    isViewed: true,
+  }
+];
 
 const INITIAL_POSTS: Post[] = [
   {
@@ -39,11 +64,19 @@ export default function App() {
     const saved = localStorage.getItem('instaclone-posts');
     return saved ? JSON.parse(saved) : INITIAL_POSTS;
   });
+  const [stories, setStories] = useState<Story[]>(() => {
+    const saved = localStorage.getItem('instaclone-stories');
+    return saved ? JSON.parse(saved) : INITIAL_STORIES;
+  });
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   useEffect(() => {
     localStorage.setItem('instaclone-posts', JSON.stringify(posts));
   }, [posts]);
+
+  useEffect(() => {
+    localStorage.setItem('instaclone-stories', JSON.stringify(stories));
+  }, [stories]);
 
   const handleCreatePost = (newPostData: Omit<Post, 'id' | 'likes' | 'createdAt' | 'author'>) => {
     const newPost: Post = {
@@ -52,11 +85,25 @@ export default function App() {
       likes: 0,
       createdAt: Date.now(),
       author: {
-        name: 'afxeditz02', // User's name from context
+        name: 'afxeditz02', 
         avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=afxeditz02',
       },
     };
     setPosts([newPost, ...posts]);
+  };
+
+  const handleAddStory = (imageUrl: string) => {
+    const newStory: Story = {
+      id: Math.random().toString(36).substring(7),
+      imageUrl,
+      author: {
+        name: 'afxeditz02',
+        avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=afxeditz02',
+      },
+      createdAt: Date.now(),
+      isViewed: false,
+    };
+    setStories([newStory, ...stories]);
   };
 
   return (
@@ -64,6 +111,10 @@ export default function App() {
       <Navbar onAddPost={() => setIsModalOpen(true)} />
       
       <main className="mx-auto max-w-5xl px-4 py-8">
+        <div className="mx-auto w-full max-w-lg">
+          <Stories stories={stories} onAddStory={handleAddStory} />
+        </div>
+
         <div className="flex flex-col items-center">
           {posts.length > 0 ? (
             posts.map((post) => (
