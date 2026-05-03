@@ -8,26 +8,28 @@ import Navbar from './components/Navbar';
 import PostCard from './components/PostCard';
 import CreatePost from './components/CreatePost';
 import Stories from './components/Stories';
+import StoryViewer from './components/StoryViewer';
+import Profile from './components/Profile';
 import { Post, Story } from './types';
 
 const INITIAL_STORIES: Story[] = [
   {
     id: 's1',
-    imageUrl: 'https://images.unsplash.com/photo-1513364776144-60967b0f800f?q=80&w=200&auto=format&fit=crop',
+    imageUrl: 'https://images.unsplash.com/photo-1513364776144-60967b0f800f?q=80&w=600&auto=format&fit=crop',
     author: { name: 'art_gallery', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Art' },
     createdAt: Date.now(),
     isViewed: false,
   },
   {
     id: 's2',
-    imageUrl: 'https://images.unsplash.com/photo-1493246507139-91e8bef99c02?q=80&w=200&auto=format&fit=crop',
+    imageUrl: 'https://images.unsplash.com/photo-1493246507139-91e8bef99c02?q=80&w=600&auto=format&fit=crop',
     author: { name: 'traveler', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Travel' },
     createdAt: Date.now(),
     isViewed: false,
   },
   {
     id: 's3',
-    imageUrl: 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?q=80&w=200&auto=format&fit=crop',
+    imageUrl: 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?q=80&w=600&auto=format&fit=crop',
     author: { name: 'foodie', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Food' },
     createdAt: Date.now(),
     isViewed: true,
@@ -69,6 +71,8 @@ export default function App() {
     return saved ? JSON.parse(saved) : INITIAL_STORIES;
   });
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const [viewingStoryIndex, setViewingStoryIndex] = useState<number | null>(null);
 
   useEffect(() => {
     localStorage.setItem('instaclone-posts', JSON.stringify(posts));
@@ -106,13 +110,25 @@ export default function App() {
     setStories([newStory, ...stories]);
   };
 
+  const markStoryViewed = (index: number) => {
+    setStories(prev => prev.map((s, i) => i === index ? { ...s, isViewed: true } : s));
+    setViewingStoryIndex(index);
+  };
+
   return (
-    <div className="min-h-screen bg-gray-50 pb-20 md:pt-20">
-      <Navbar onAddPost={() => setIsModalOpen(true)} />
+    <div className="min-h-screen bg-gray-50 pb-20 md:pb-0 md:pl-20 xl:pl-64">
+      <Navbar 
+        onAddPost={() => setIsModalOpen(true)} 
+        onProfileClick={() => setIsProfileOpen(true)}
+      />
       
-      <main className="mx-auto max-w-5xl px-4 py-8">
+      <main className="mx-auto w-full px-4 py-8">
         <div className="mx-auto w-full max-w-lg">
-          <Stories stories={stories} onAddStory={handleAddStory} />
+          <Stories 
+            stories={stories} 
+            onAddStory={handleAddStory} 
+            onViewStory={markStoryViewed}
+          />
         </div>
 
         <div className="flex flex-col items-center">
@@ -134,7 +150,21 @@ export default function App() {
         onClose={() => setIsModalOpen(false)} 
         onPost={handleCreatePost} 
       />
+
+      <Profile 
+        isOpen={isProfileOpen} 
+        onClose={() => setIsProfileOpen(false)} 
+        postCount={posts.filter(p => p.author.name === 'afxeditz02').length}
+      />
+
+      <StoryViewer 
+        stories={stories} 
+        initialIndex={viewingStoryIndex ?? 0}
+        isOpen={viewingStoryIndex !== null}
+        onClose={() => setViewingStoryIndex(null)}
+      />
     </div>
   );
 }
+
 

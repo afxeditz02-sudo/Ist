@@ -1,13 +1,31 @@
 import { Heart, MessageCircle, Send, Bookmark, MoreHorizontal } from 'lucide-react';
-import { motion } from 'motion/react';
-import { FC } from 'react';
+import { motion, AnimatePresence } from 'motion/react';
+import { FC, useState } from 'react';
 import { Post } from '../types';
 
 interface PostCardProps {
   post: Post;
+  onLike?: (id: string) => void;
 }
 
-const PostCard: FC<PostCardProps> = ({ post }) => {
+const PostCard: FC<PostCardProps> = ({ post, onLike }) => {
+  const [isLiked, setIsLiked] = useState(false);
+  const [showHeartOverlay, setShowHeartOverlay] = useState(false);
+
+  const handleLike = () => {
+    setIsLiked(!isLiked);
+    if (onLike) onLike(post.id);
+  };
+
+  const handleDoubleTap = () => {
+    if (!isLiked) {
+      setIsLiked(true);
+      if (onLike) onLike(post.id);
+    }
+    setShowHeartOverlay(true);
+    setTimeout(() => setShowHeartOverlay(false), 800);
+  };
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -33,21 +51,39 @@ const PostCard: FC<PostCardProps> = ({ post }) => {
       </div>
 
       {/* Post Image */}
-      <div className="aspect-square w-full overflow-hidden bg-gray-50">
+      <div 
+        className="relative aspect-square w-full overflow-hidden bg-gray-50 cursor-pointer"
+        onDoubleClick={handleDoubleTap}
+      >
         <img 
           src={post.imageUrl} 
           alt={post.caption} 
           className="h-full w-full object-cover"
           referrerPolicy="no-referrer"
         />
+        <AnimatePresence>
+          {showHeartOverlay && (
+            <motion.div
+              initial={{ scale: 0, opacity: 0 }}
+              animate={{ scale: 1.2, opacity: 1 }}
+              exit={{ scale: 0, opacity: 0 }}
+              className="absolute inset-0 flex items-center justify-center pointer-events-none"
+            >
+              <Heart className="h-24 w-24 text-white fill-white drop-shadow-xl" />
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
 
       {/* Post Actions */}
       <div className="p-3">
         <div className="mb-2 flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <motion.button whileTap={{ scale: 1.2 }}>
-              <Heart className="h-6 w-6 hover:text-red-500" />
+            <motion.button 
+              whileTap={{ scale: 1.4 }}
+              onClick={handleLike}
+            >
+              <Heart className={`h-6 w-6 transition-colors ${isLiked ? 'fill-red-500 text-red-500' : 'hover:text-gray-600'}`} />
             </motion.button>
             <motion.button whileTap={{ scale: 1.2 }}>
               <MessageCircle className="h-6 w-6 hover:text-gray-600" />
@@ -63,7 +99,7 @@ const PostCard: FC<PostCardProps> = ({ post }) => {
 
         {/* Likes and Caption */}
         <div className="space-y-1">
-          <p className="text-sm font-bold">{post.likes.toLocaleString()} likes</p>
+          <p className="text-sm font-bold">{(post.likes + (isLiked ? 1 : 0)).toLocaleString()} likes</p>
           <p className="text-sm">
             <span className="mr-2 font-bold">{post.author.name}</span>
             {post.caption}
@@ -78,3 +114,4 @@ const PostCard: FC<PostCardProps> = ({ post }) => {
 };
 
 export default PostCard;
+

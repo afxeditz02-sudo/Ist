@@ -6,9 +6,10 @@ import { useRef, ChangeEvent } from 'react';
 interface StoriesProps {
   stories: Story[];
   onAddStory: (imageUrl: string) => void;
+  onViewStory: (index: number) => void;
 }
 
-export default function Stories({ stories, onAddStory }: StoriesProps) {
+export default function Stories({ stories, onAddStory, onViewStory }: StoriesProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
@@ -53,10 +54,11 @@ export default function Stories({ stories, onAddStory }: StoriesProps) {
       </div>
 
       {/* Other Stories */}
-      {stories.map((story) => (
+      {stories.map((story, index) => (
         <motion.div 
           key={story.id}
           whileTap={{ scale: 0.9 }}
+          onClick={() => onViewStory(index)}
           className="flex flex-col items-center gap-1 shrink-0 cursor-pointer"
         >
           <div className={`p-[2px] rounded-full ${story.isViewed ? 'bg-gray-300' : 'bg-gradient-to-tr from-yellow-400 via-orange-500 to-purple-600'}`}>
