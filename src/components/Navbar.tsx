@@ -5,9 +5,10 @@ interface NavbarProps {
   onAddPost: () => void;
   onProfileClick: () => void;
   onHomeClick: () => void;
+  onSearchClick: () => void;
 }
 
-export default function Navbar({ onAddPost, onProfileClick, onHomeClick }: NavbarProps) {
+export default function Navbar({ onAddPost, onProfileClick, onHomeClick, onSearchClick }: NavbarProps) {
   const navItems = [
     { 
       icon: Home, 
@@ -17,7 +18,7 @@ export default function Navbar({ onAddPost, onProfileClick, onHomeClick }: Navba
         window.scrollTo({ top: 0, behavior: 'smooth' });
       } 
     },
-    { icon: Search, label: 'Search', action: () => {} },
+    { icon: Search, label: 'Search', action: onSearchClick },
     { icon: PlusSquare, label: 'Create', action: onAddPost },
     { icon: User, label: 'Profile', action: onProfileClick },
   ];

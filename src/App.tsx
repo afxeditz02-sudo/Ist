@@ -13,6 +13,7 @@ import StoryViewer from './components/StoryViewer';
 import Profile from './components/Profile';
 import ProfileSettings from './components/ProfileSettings';
 import Login from './components/Login';
+import SearchOverlay from './components/SearchOverlay';
 import { auth } from './lib/firebase';
 import { 
   subscribeToPosts, 
@@ -38,6 +39,7 @@ export default function App() {
   const [stories, setStories] = useState<Story[]>([]);
   
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [viewingProfileUid, setViewingProfileUid] = useState<string | null>(null);
   const [viewingProfileData, setViewingProfileData] = useState<Author | null>(null);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
@@ -212,6 +214,7 @@ export default function App() {
         onAddPost={() => setIsModalOpen(true)} 
         onProfileClick={() => setViewingProfileUid(currentUser.uid)}
         onHomeClick={() => setViewingProfileUid(null)}
+        onSearchClick={() => setIsSearchOpen(true)}
       />
       
       <main className="mx-auto w-full px-4 py-8">
@@ -277,6 +280,13 @@ export default function App() {
         onClose={() => setIsSettingsOpen(false)}
         user={currentUser}
         onUpdate={handleUpdateProfile}
+      />
+
+      <SearchOverlay
+        isOpen={isSearchOpen}
+        onClose={() => setIsSearchOpen(false)}
+        posts={posts}
+        onUserClick={(uid) => setViewingProfileUid(uid)}
       />
 
       <StoryViewer 
