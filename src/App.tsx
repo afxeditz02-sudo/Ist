@@ -22,7 +22,10 @@ import {
   likePost, 
   savePost, 
   markStoryViewed,
-  syncUserProfile
+  syncUserProfile,
+  followUser,
+  getUserProfile,
+  updateProfile // Add this import
 } from './services/dataService';
 import { Post, Story, Author } from './types';
 import { Camera, Loader2 } from 'lucide-react';
@@ -35,21 +38,30 @@ export default function App() {
   const [stories, setStories] = useState<Story[]>([]);
   
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const [viewingProfileUid, setViewingProfileUid] = useState<string | null>(null);
+  const [viewingProfileData, setViewingProfileData] = useState<Author | null>(null);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [viewingStoryIndex, setViewingStoryIndex] = useState<number | null>(null);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
+    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
       setUser(firebaseUser);
       if (firebaseUser) {
-        const author: Author = {
-          uid: firebaseUser.uid,
-          name: firebaseUser.displayName || 'Anonymous',
-          avatar: firebaseUser.photoURL || `https://api.dicebear.com/7.x/avataaars/svg?seed=${firebaseUser.uid}`,
-        };
-        setCurrentUser(author);
-        syncUserProfile({ ...author, email: firebaseUser.email });
+        // Fetch full profile to get followers/following
+        const profile = await getUserProfile(firebaseUser.uid);
+        if (profile) {
+          setCurrentUser(profile);
+        } else {
+          const newAuthor: Author = {
+            uid: firebaseUser.uid,
+            name: firebaseUser.displayName || 'Anonymous',
+            avatar: firebaseUser.photoURL || `https://api.dicebear.com/7.x/avataaars/svg?seed=${firebaseUser.uid}`,
+            followers: [],
+            following: [],
+          };
+          setCurrentUser(newAuthor);
+          syncUserProfile({ ...newAuthor, email: firebaseUser.email });
+        }
       } else {
         setCurrentUser(null);
       }
@@ -60,14 +72,27 @@ export default function App() {
   }, []);
 
   useEffect(() => {
+    if (viewingProfileUid) {
+      getUserProfile(viewingProfileUid).then(setViewingProfileData);
+    } else {
+      setViewingProfileData(null);
+    }
+  }, [viewingProfileUid]);
+
+  useEffect(() => {
     if (!user) return;
 
     const unsubPosts = subscribeToPosts((allPosts) => {
-      const processedPosts = allPosts.map(p => ({
-        ...p,
-        isLiked: p.likedBy?.includes(user.uid),
-        isSaved: p.savedBy?.includes(user.uid),
-      }));
+      const processedPosts = allPosts.map(p => {
+        // Handle legacy schema where imageUrl was a single string
+        const imageUrls = p.imageUrls || ((p as any).imageUrl ? [(p as any).imageUrl] : []);
+        return {
+          ...p,
+          imageUrls,
+          isLiked: p.likedBy?.includes(user.uid),
+          isSaved: p.savedBy?.includes(user.uid),
+        };
+      });
       setPosts(processedPosts);
     });
 
@@ -128,15 +153,42 @@ export default function App() {
     setViewingStoryIndex(index);
   };
 
-  const userPosts = posts.filter(p => p.author.name === currentUser.name);
+  const userPosts = posts.filter(p => p.author.uid === currentUser.uid);
   const savedPosts = posts.filter(p => p.isSaved);
   const likedPosts = posts.filter(p => p.isLiked);
+
+  const handleUpdateProfile = async (updatedUser: Author) => {
+    if (!user) return;
+    await updateProfile(user.uid, updatedUser);
+    setCurrentUser(updatedUser);
+  };
+
+  const handleFollow = async (targetUid: string) => {
+    if (!currentUser) return;
+    const isFollowing = currentUser.following?.includes(targetUid) || false;
+    await followUser(currentUser.uid, targetUid, isFollowing);
+    
+    // Optimistic update
+    const updatedFollowing = isFollowing 
+      ? (currentUser.following || []).filter(id => id !== targetUid)
+      : [...(currentUser.following || []), targetUid];
+    
+    setCurrentUser({ ...currentUser, following: updatedFollowing });
+
+    if (viewingProfileData && viewingProfileData.uid === targetUid) {
+      const updatedFollowers = isFollowing
+        ? (viewingProfileData.followers || []).filter(id => id !== currentUser.uid)
+        : [...(viewingProfileData.followers || []), currentUser.uid];
+      setViewingProfileData({ ...viewingProfileData, followers: updatedFollowers });
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gray-50 pb-20 md:pb-0 md:pl-20 xl:pl-64">
       <Navbar 
         onAddPost={() => setIsModalOpen(true)} 
-        onProfileClick={() => setIsProfileOpen(true)}
+        onProfileClick={() => setViewingProfileUid(currentUser.uid)}
+        onHomeClick={() => setViewingProfileUid(null)}
       />
       
       <main className="mx-auto w-full px-4 py-8">
@@ -157,6 +209,7 @@ export default function App() {
                 post={post} 
                 onLike={handleLike}
                 onSave={handleSave}
+                onAuthorClick={(uid) => setViewingProfileUid(uid)}
               />
             ))
           ) : (
@@ -184,12 +237,15 @@ export default function App() {
       />
 
       <Profile 
-        isOpen={isProfileOpen} 
-        onClose={() => setIsProfileOpen(false)} 
-        user={currentUser}
-        posts={userPosts}
-        savedPosts={savedPosts}
-        likedPosts={likedPosts}
+        isOpen={!!viewingProfileUid} 
+        onClose={() => setViewingProfileUid(null)} 
+        user={viewingProfileData || currentUser}
+        posts={posts.filter(p => p.author.uid === viewingProfileUid)}
+        savedPosts={viewingProfileUid === currentUser.uid ? savedPosts : []}
+        likedPosts={viewingProfileUid === currentUser.uid ? likedPosts : []}
+        isOwnProfile={viewingProfileUid === currentUser.uid}
+        isFollowing={currentUser.following?.includes(viewingProfileUid || '') || false}
+        onFollow={() => viewingProfileUid && handleFollow(viewingProfileUid)}
         onEditProfile={() => setIsSettingsOpen(true)}
       />
 
@@ -197,7 +253,7 @@ export default function App() {
         isOpen={isSettingsOpen}
         onClose={() => setIsSettingsOpen(false)}
         user={currentUser}
-        onUpdate={setCurrentUser}
+        onUpdate={handleUpdateProfile}
       />
 
       <StoryViewer 

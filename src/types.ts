@@ -2,11 +2,13 @@ export interface Author {
   uid: string;
   name: string;
   avatar: string;
+  followers?: string[];
+  following?: string[];
 }
 
 export interface Post {
   id: string;
-  imageUrl: string;
+  imageUrls: string[];
   caption: string;
   author: Author;
   likes: number;

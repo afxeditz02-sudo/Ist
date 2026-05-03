@@ -145,17 +145,61 @@ export const markStoryViewed = async (storyId: string, userId: string) => {
   }
 };
 
-export const syncUserProfile = async (user: Author & { uid: string, email: string | null }) => {
+export const followUser = async (currentUserId: string, targetUserId: string, isFollowing: boolean) => {
+  try {
+    const currentUserRef = doc(db, 'users', currentUserId);
+    const targetUserRef = doc(db, 'users', targetUserId);
+
+    // Update current user's following list
+    await updateDoc(currentUserRef, {
+      following: isFollowing ? arrayRemove(targetUserId) : arrayUnion(targetUserId)
+    });
+
+    // Update target user's followers list
+    await updateDoc(targetUserRef, {
+      followers: isFollowing ? arrayRemove(currentUserId) : arrayUnion(currentUserId)
+    });
+  } catch (error) {
+    handleFirestoreError(error, OperationType.UPDATE, `users/${targetUserId}`);
+  }
+};
+
+export const syncUserProfile = async (user: Author & { email: string | null }) => {
   try {
     const userRef = doc(db, 'users', user.uid);
     const userDoc = await getDoc(userRef);
     if (!userDoc.exists()) {
       await setDoc(userRef, {
         ...user,
+        followers: [],
+        following: [],
         createdAt: Date.now()
       });
     }
   } catch (error) {
     handleFirestoreError(error, OperationType.WRITE, `users/${user.uid}`);
+  }
+};
+
+export const getUserProfile = async (uid: string): Promise<Author | null> => {
+  try {
+    const userRef = doc(db, 'users', uid);
+    const userDoc = await getDoc(userRef);
+    if (userDoc.exists()) {
+      return { ...userDoc.data() } as Author;
+    }
+    return null;
+  } catch (error) {
+    handleFirestoreError(error, OperationType.GET, `users/${uid}`);
+    return null;
+  }
+};
+
+export const updateProfile = async (uid: string, updates: Partial<Author>) => {
+  try {
+    const userRef = doc(db, 'users', uid);
+    await updateDoc(userRef, updates);
+  } catch (error) {
+    handleFirestoreError(error, OperationType.UPDATE, `users/${uid}`);
   }
 };

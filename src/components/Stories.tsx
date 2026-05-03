@@ -89,13 +89,17 @@ export default function Stories({ stories, currentUser, onAddStory, onViewStory 
         
         // Find the index of the first unviewed story for this author in the main stories array
         // or just the oldest story (which would be at the end of the userStories array if it's sorted desc)
-        // Actually, Instagram behavior is: first unviewed. If all viewed, first story.
-        // main stories array is sorted desc. So we want the one with lowest index that belongs to author and is unviewed?
-        // Wait, if it's sorted desc, and we want to go from oldest to newest...
-        // Main array: [Newest, ..., Oldest]
-        // Index within main array:
-        const firstUnviewedIndex = stories.findLastIndex(s => s.author.uid === authorId && !s.isViewed);
-        const oldestIndex = stories.findLastIndex(s => s.author.uid === authorId);
+        let firstUnviewedIndex = -1;
+        let oldestIndex = -1;
+        for (let i = stories.length - 1; i >= 0; i--) {
+          if (stories[i].author.uid === authorId) {
+            if (oldestIndex === -1) oldestIndex = i;
+            if (!stories[i].isViewed) {
+              firstUnviewedIndex = i;
+              break;
+            }
+          }
+        }
         const targetIndex = firstUnviewedIndex !== -1 ? firstUnviewedIndex : oldestIndex;
 
         return (

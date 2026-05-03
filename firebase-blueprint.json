@@ -9,6 +9,8 @@
         "name": { "type": "string" },
         "avatar": { "type": "string" },
         "email": { "type": "string" },
+        "followers": { "type": "array", "items": { "type": "string" } },
+        "following": { "type": "array", "items": { "type": "string" } },
         "createdAt": { "type": "number" }
       },
       "required": ["uid", "name", "avatar", "email"]
@@ -19,7 +21,7 @@
       "type": "object",
       "properties": {
         "id": { "type": "string" },
-        "imageUrl": { "type": "string" },
+        "imageUrls": { "type": "array", "items": { "type": "string" } },
         "caption": { "type": "string" },
         "author": { "$ref": "#/entities/User" },
         "likes": { "type": "number" },
@@ -27,7 +29,7 @@
         "savedBy": { "type": "array", "items": { "type": "string" } },
         "createdAt": { "type": "number" }
       },
-      "required": ["id", "imageUrl", "caption", "author", "likes", "createdAt"]
+      "required": ["id", "imageUrls", "caption", "author", "likes", "createdAt"]
     },
     "Story": {
       "title": "Story",

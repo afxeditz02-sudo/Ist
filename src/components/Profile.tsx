@@ -8,12 +8,26 @@ interface ProfileProps {
   onClose: () => void;
   user: Author;
   posts: Post[];
-  savedPosts: Post[];
-  likedPosts: Post[];
+  savedPosts?: Post[];
+  likedPosts?: Post[];
+  isOwnProfile?: boolean;
+  isFollowing?: boolean;
+  onFollow?: () => void;
   onEditProfile: () => void;
 }
 
-export default function Profile({ isOpen, onClose, user, posts, savedPosts, likedPosts, onEditProfile }: ProfileProps) {
+export default function Profile({ 
+  isOpen, 
+  onClose, 
+  user, 
+  posts, 
+  savedPosts = [], 
+  likedPosts = [], 
+  isOwnProfile = true,
+  isFollowing = false,
+  onFollow,
+  onEditProfile 
+}: ProfileProps) {
   const [activeTab, setActiveTab] = useState<'posts' | 'saved' | 'liked'>('posts');
 
   const displayPosts = {
@@ -79,27 +93,37 @@ export default function Profile({ isOpen, onClose, user, posts, savedPosts, like
                         {user.name}
                       </h3>
                       <div className="flex gap-2 w-full md:w-auto">
-                        <button 
-                          onClick={onEditProfile}
-                          className="flex-1 md:flex-none rounded-lg bg-gray-100 px-6 py-1.5 text-sm font-semibold hover:bg-gray-200 transition-colors active:scale-95"
-                        >
-                          Edit Profile
-                        </button>
-                        <button className="rounded-lg bg-gray-100 px-2.5 py-1.5 hover:bg-gray-200 md:hidden">
-                          <Settings className="h-4 w-4" />
-                        </button>
+                        {isOwnProfile ? (
+                          <>
+                            <button 
+                              onClick={onEditProfile}
+                              className="flex-1 md:flex-none rounded-lg bg-gray-100 px-6 py-1.5 text-sm font-semibold hover:bg-gray-200 transition-colors active:scale-95"
+                            >
+                              Edit Profile
+                            </button>
+                            <button className="rounded-lg bg-gray-100 px-2.5 py-1.5 hover:bg-gray-200 md:hidden">
+                              <Settings className="h-4 w-4" />
+                            </button>
+                          </>
+                        ) : (
+                          <button 
+                            onClick={onFollow}
+                            className={`flex-1 md:flex-none rounded-lg px-8 py-1.5 text-sm font-semibold transition-all active:scale-95 ${isFollowing ? 'bg-gray-100 text-black hover:bg-gray-200' : 'bg-blue-500 text-white hover:bg-blue-600'}`}
+                          >
+                            {isFollowing ? 'Following' : 'Follow'}
+                          </button>
+                        )}
                       </div>
                     </div>
                     
                     <div className="hidden md:flex items-center gap-10 text-base">
                       <span className="text-gray-900"><strong className="font-semibold">{posts.length}</strong> posts</span>
-                      <span className="text-gray-900"><strong className="font-semibold">1.2K</strong> followers</span>
-                      <span className="text-gray-900"><strong className="font-semibold">850</strong> following</span>
+                      <span className="text-gray-900"><strong className="font-semibold">{user.followers?.length || 0}</strong> followers</span>
+                      <span className="text-gray-900"><strong className="font-semibold">{user.following?.length || 0}</strong> following</span>
                     </div>
 
                     <div className="mt-4 hidden md:block">
                       <p className="text-sm font-semibold text-gray-900">{user.name}</p>
-                      <p className="text-sm text-gray-600 mt-0.5">Digital Creator & Explorer 🌌</p>
                     </div>
                   </div>
                 </div>
@@ -107,7 +131,6 @@ export default function Profile({ isOpen, onClose, user, posts, savedPosts, like
                 {/* Mobile Bio */}
                 <div className="md:hidden mb-6 px-1">
                   <p className="text-sm font-semibold text-gray-900">{user.name}</p>
-                  <p className="text-sm text-gray-600 mt-0.5">Digital Creator & Explorer 🌌</p>
                 </div>
 
                 {/* Mobile Stats Bar */}
@@ -117,11 +140,11 @@ export default function Profile({ isOpen, onClose, user, posts, savedPosts, like
                     <span className="text-gray-500 text-xs uppercase tracking-wide">posts</span>
                   </div>
                   <div className="flex flex-col flex-1">
-                    <span className="font-bold text-gray-900">1.2K</span>
+                    <span className="font-bold text-gray-900">{user.followers?.length || 0}</span>
                     <span className="text-gray-500 text-xs uppercase tracking-wide">followers</span>
                   </div>
                   <div className="flex flex-col flex-1">
-                    <span className="font-bold text-gray-900">850</span>
+                    <span className="font-bold text-gray-900">{user.following?.length || 0}</span>
                     <span className="text-gray-500 text-xs uppercase tracking-wide">following</span>
                   </div>
                 </div>
@@ -173,10 +196,17 @@ export default function Profile({ isOpen, onClose, user, posts, savedPosts, like
                           className="aspect-square w-full bg-gray-100 overflow-hidden group relative cursor-pointer"
                         >
                           <img 
-                            src={post.imageUrl} 
+                            src={post.imageUrls?.[0] || (post as any).imageUrl} 
                             alt="" 
                             className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110" 
                           />
+                          {post.imageUrls && post.imageUrls.length > 1 && (
+                            <div className="absolute right-2 top-2 z-10 text-white drop-shadow-md">
+                              <svg className="h-5 w-5 fill-current opacity-90" viewBox="0 0 24 24">
+                                <path d="M19 1H5C2.8 1 1 2.8 1 5v14c0 2.2 1.8 4 4 4h14c2.2 0 4-1.8 4-4V5c0-2.2-1.8-4-4-4zm2 18c0 1.1-.9 2-2 2H5c-1.1 0-2-.9-2-2V5c0-1.1.9-2 2-2h14c1.1 0 2 .9 2 2v14zM16 7h-2c-.6 0-1 .4-1 1s.4 1 1 1h2c.6 0 1-.4 1-1s-.4-1-1-1zm0 4h-2c-.6 0-1 .4-1 1s.4 1 1 1h2c.6 0 1-.4 1-1s-.4-1-1-1zm0 4h-2c-.6 0-1 .4-1 1s.4 1 1 1h2c.6 0 1-.4 1-1s-.4-1-1-1z" />
+                              </svg>
+                            </div>
+                          )}
                           <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white gap-4 md:gap-6 backdrop-blur-[2px]">
                             <div className="flex items-center gap-1.5 md:gap-2 font-bold text-sm md:text-lg">
                               <Heart className="h-5 w-5 md:h-6 md:w-6 fill-white" /> 

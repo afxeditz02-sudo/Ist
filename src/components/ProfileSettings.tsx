@@ -1,6 +1,6 @@
-import { X, Camera, LogOut } from 'lucide-react';
+import { X, Camera, LogOut, Upload } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
-import { useState } from 'react';
+import { useState, useRef, ChangeEvent } from 'react';
 import { Author } from '../types';
 import { auth } from '../lib/firebase';
 
@@ -14,6 +14,7 @@ interface ProfileSettingsProps {
 export default function ProfileSettings({ isOpen, onClose, user, onUpdate }: ProfileSettingsProps) {
   const [name, setName] = useState(user.name);
   const [avatar, setAvatar] = useState(user.avatar);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleSave = () => {
     onUpdate({ ...user, name, avatar });
@@ -23,6 +24,17 @@ export default function ProfileSettings({ isOpen, onClose, user, onUpdate }: Pro
   const handleAvatarChange = () => {
     const newSeed = Math.random().toString(36).substring(7);
     setAvatar(`https://api.dicebear.com/7.x/avataaars/svg?seed=${newSeed}`);
+  };
+
+  const handleFileUpload = (e: ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setAvatar(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
   };
 
   const handleLogout = () => {
@@ -68,18 +80,33 @@ export default function ProfileSettings({ isOpen, onClose, user, onUpdate }: Pro
                     className="h-full w-full rounded-full border-2 border-gray-100 object-cover" 
                   />
                   <button 
-                    onClick={handleAvatarChange}
-                    className="absolute bottom-0 right-0 rounded-full bg-white p-1.5 shadow-md border"
+                    onClick={() => fileInputRef.current?.click()}
+                    className="absolute bottom-0 right-0 rounded-full bg-black p-1.5 shadow-md border border-white text-white"
                   >
-                    <Camera className="h-4 w-4" />
+                    <Upload className="h-4 w-4" />
+                  </button>
+                  <input 
+                    type="file" 
+                    className="hidden" 
+                    accept="image/*"
+                    ref={fileInputRef}
+                    onChange={handleFileUpload}
+                  />
+                </div>
+                <div className="flex gap-4">
+                  <button 
+                    onClick={() => fileInputRef.current?.click()}
+                    className="text-xs font-semibold text-blue-500"
+                  >
+                    Upload Photo
+                  </button>
+                  <button 
+                    onClick={handleAvatarChange}
+                    className="text-xs font-semibold text-gray-500"
+                  >
+                    Random Avatar
                   </button>
                 </div>
-                <button 
-                  onClick={handleAvatarChange}
-                  className="text-xs font-semibold text-blue-500"
-                >
-                  Change Profile Photo
-                </button>
               </div>
 
               <div className="space-y-4">

@@ -30,11 +30,10 @@ service cloud.firestore {
     // User Profile Rules
     match /users/{userId} {
       allow read: if isSignedIn();
-      allow create: if isOwner(userId) && 
-        incoming().keys().hasAll(['uid', 'name', 'avatar', 'email', 'createdAt']) &&
-        incoming().keys().size() == 5;
-      allow update: if isOwner(userId) && 
-        incoming().diff(existing()).affectedKeys().hasOnly(['name', 'avatar']);
+      allow create: if isOwner(userId);
+      allow update: if (isOwner(userId) && 
+        incoming().diff(existing()).affectedKeys().hasOnly(['name', 'avatar', 'following'])) ||
+        (isSignedIn() && incoming().diff(existing()).affectedKeys().hasOnly(['followers']));
     }
 
     // Post Rules
@@ -42,11 +41,14 @@ service cloud.firestore {
       allow read: if isSignedIn();
       allow create: if isSignedIn() && 
         incoming().author.uid == request.auth.uid &&
+        incoming().imageUrls is list &&
+        incoming().imageUrls.size() > 0 &&
+        incoming().imageUrls.size() <= 20 &&
         incoming().likes == 0;
       allow update: if isSignedIn() && (
         // Action: Like/Unlike
         (incoming().diff(existing()).affectedKeys().hasOnly(['likes', 'likedBy'])) ||
-        // Action: Save/Unsave (using a separate collection would be better but keeping it simple for now)
+        // Action: Save/Unsave
         (incoming().diff(existing()).affectedKeys().hasOnly(['savedBy'])) ||
         // Action: Edit Caption
         (incoming().author.uid == request.auth.uid && incoming().diff(existing()).affectedKeys().hasOnly(['caption']))

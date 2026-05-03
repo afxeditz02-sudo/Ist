@@ -4,11 +4,19 @@ import { motion } from 'motion/react';
 interface NavbarProps {
   onAddPost: () => void;
   onProfileClick: () => void;
+  onHomeClick: () => void;
 }
 
-export default function Navbar({ onAddPost, onProfileClick }: NavbarProps) {
+export default function Navbar({ onAddPost, onProfileClick, onHomeClick }: NavbarProps) {
   const navItems = [
-    { icon: Home, label: 'Home', action: () => window.scrollTo({ top: 0, behavior: 'smooth' }) },
+    { 
+      icon: Home, 
+      label: 'Home', 
+      action: () => {
+        onHomeClick();
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      } 
+    },
     { icon: Search, label: 'Search', action: () => {} },
     { icon: PlusSquare, label: 'Create', action: onAddPost },
     { icon: User, label: 'Profile', action: onProfileClick },
