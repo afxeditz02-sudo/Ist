@@ -45,27 +45,32 @@ export default function App() {
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
-      setUser(firebaseUser);
-      if (firebaseUser) {
-        // Fetch full profile to get followers/following
-        const profile = await getUserProfile(firebaseUser.uid);
-        if (profile) {
-          setCurrentUser(profile);
+      try {
+        setUser(firebaseUser);
+        if (firebaseUser) {
+          // Fetch full profile to get followers/following
+          const profile = await getUserProfile(firebaseUser.uid);
+          if (profile) {
+            setCurrentUser(profile);
+          } else {
+            const newAuthor: Author = {
+              uid: firebaseUser.uid,
+              name: firebaseUser.displayName || 'Anonymous',
+              avatar: firebaseUser.photoURL || `https://api.dicebear.com/7.x/avataaars/svg?seed=${firebaseUser.uid}`,
+              followers: [],
+              following: [],
+            };
+            setCurrentUser(newAuthor);
+            syncUserProfile({ ...newAuthor, email: firebaseUser.email });
+          }
         } else {
-          const newAuthor: Author = {
-            uid: firebaseUser.uid,
-            name: firebaseUser.displayName || 'Anonymous',
-            avatar: firebaseUser.photoURL || `https://api.dicebear.com/7.x/avataaars/svg?seed=${firebaseUser.uid}`,
-            followers: [],
-            following: [],
-          };
-          setCurrentUser(newAuthor);
-          syncUserProfile({ ...newAuthor, email: firebaseUser.email });
+          setCurrentUser(null);
         }
-      } else {
-        setCurrentUser(null);
+      } catch (error) {
+        console.error("Auth state change error:", error);
+      } finally {
+        setLoading(false);
       }
-      setLoading(false);
     });
 
     return () => unsubscribe();
@@ -118,8 +123,26 @@ export default function App() {
     );
   }
 
-  if (!user || !currentUser) {
+  if (!user) {
     return <Login onLogin={() => {}} />;
+  }
+
+  // If user is authenticated but profile isn't loaded yet (and not loading)
+  // This could happen if fetch failed. We should still show something.
+  if (!currentUser) {
+    return (
+      <div className="flex min-h-screen flex-col items-center justify-center bg-gray-50 p-6 text-center">
+        <Camera className="h-12 w-12 text-gray-300 mb-4" />
+        <h2 className="text-xl font-bold">Finishing setup...</h2>
+        <p className="text-gray-500 mb-6">We're getting your profile ready.</p>
+        <button 
+          onClick={() => window.location.reload()}
+          className="rounded-lg bg-black px-6 py-2 text-white font-semibold"
+        >
+          Try Reloading
+        </button>
+      </div>
+    );
   }
 
   const handleCreatePost = async (newPostData: Omit<Post, 'id' | 'likes' | 'createdAt' | 'author'>) => {

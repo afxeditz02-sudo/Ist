@@ -1,5 +1,6 @@
-import { Camera } from 'lucide-react';
+import { Camera, Loader2 } from 'lucide-react';
 import { motion } from 'motion/react';
+import { useState } from 'react';
 import { loginWithGoogle } from '../lib/firebase';
 
 interface LoginProps {
@@ -7,12 +8,20 @@ interface LoginProps {
 }
 
 export default function Login({ onLogin }: LoginProps) {
+  const [isLoggingIn, setIsLoggingIn] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
   const handleLogin = async () => {
+    setIsLoggingIn(true);
+    setError(null);
     try {
       await loginWithGoogle();
       onLogin();
-    } catch (error) {
-      console.error('Login failed', error);
+    } catch (err: any) {
+      console.error('Login failed', err);
+      setError(err?.message || 'Login failed. Please try again.');
+    } finally {
+      setIsLoggingIn(false);
     }
   };
 
@@ -31,13 +40,24 @@ export default function Login({ onLogin }: LoginProps) {
           <p className="text-gray-500 text-sm">Sign in to see photos and videos from your friends.</p>
         </div>
 
-        <button
-          onClick={handleLogin}
-          className="flex w-full items-center justify-center gap-3 rounded-lg bg-black px-6 py-3 text-sm font-semibold text-white shadow-md hover:bg-gray-800 transition-all active:scale-95"
-        >
-          <img src="https://www.google.com/favicon.ico" alt="Google" className="h-4 w-4 bg-white rounded-full p-0.5" />
-          Continue with Google
-        </button>
+        <div className="space-y-4">
+          <button
+            onClick={handleLogin}
+            disabled={isLoggingIn}
+            className="flex w-full items-center justify-center gap-3 rounded-lg bg-black px-6 py-3 text-sm font-semibold text-white shadow-md hover:bg-gray-800 transition-all active:scale-95 disabled:opacity-70 disabled:cursor-not-allowed"
+          >
+            {isLoggingIn ? (
+              <Loader2 className="h-4 w-4 animate-spin text-white" />
+            ) : (
+              <img src="https://www.google.com/favicon.ico" alt="Google" className="h-4 w-4 bg-white rounded-full p-0.5" />
+            )}
+            {isLoggingIn ? 'Connecting...' : 'Continue with Google'}
+          </button>
+
+          {error && (
+            <p className="text-xs text-red-500 font-medium">{error}</p>
+          )}
+        </div>
 
         <p className="text-[10px] text-gray-400 uppercase tracking-widest mt-8 font-medium">
           A Real-Time Database Experience
