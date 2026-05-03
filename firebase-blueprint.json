@@ -1,0 +1,60 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "Information about a registered user",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "name": { "type": "string" },
+        "avatar": { "type": "string" },
+        "email": { "type": "string" },
+        "createdAt": { "type": "number" }
+      },
+      "required": ["uid", "name", "avatar", "email"]
+    },
+    "Post": {
+      "title": "Post",
+      "description": "An Instagram-style post",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "imageUrl": { "type": "string" },
+        "caption": { "type": "string" },
+        "author": { "$ref": "#/entities/User" },
+        "likes": { "type": "number" },
+        "likedBy": { "type": "array", "items": { "type": "string" } },
+        "savedBy": { "type": "array", "items": { "type": "string" } },
+        "createdAt": { "type": "number" }
+      },
+      "required": ["id", "imageUrl", "caption", "author", "likes", "createdAt"]
+    },
+    "Story": {
+      "title": "Story",
+      "description": "An ephemeral story",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "imageUrl": { "type": "string" },
+        "author": { "border": "#/entities/User" },
+        "createdAt": { "type": "number" },
+        "viewedBy": { "type": "array", "items": { "type": "string" } }
+      },
+      "required": ["id", "imageUrl", "author", "createdAt"]
+    }
+  },
+  "firestore": {
+    "users/{userId}": {
+      "schema": "User",
+      "description": "User profile documents"
+    },
+    "posts/{postId}": {
+      "schema": "Post",
+      "description": "Collection of all shared posts"
+    },
+    "stories/{storyId}": {
+      "schema": "Story",
+      "description": "Collection of all shared stories"
+    }
+  }
+}

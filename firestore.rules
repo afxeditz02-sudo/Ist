@@ -1,0 +1,65 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Default deny
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Helper functions
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    // User Profile Rules
+    match /users/{userId} {
+      allow read: if isSignedIn();
+      allow create: if isOwner(userId) && 
+        incoming().keys().hasAll(['uid', 'name', 'avatar', 'email', 'createdAt']) &&
+        incoming().keys().size() == 5;
+      allow update: if isOwner(userId) && 
+        incoming().diff(existing()).affectedKeys().hasOnly(['name', 'avatar']);
+    }
+
+    // Post Rules
+    match /posts/{postId} {
+      allow read: if isSignedIn();
+      allow create: if isSignedIn() && 
+        incoming().author.uid == request.auth.uid &&
+        incoming().likes == 0;
+      allow update: if isSignedIn() && (
+        // Action: Like/Unlike
+        (incoming().diff(existing()).affectedKeys().hasOnly(['likes', 'likedBy'])) ||
+        // Action: Save/Unsave (using a separate collection would be better but keeping it simple for now)
+        (incoming().diff(existing()).affectedKeys().hasOnly(['savedBy'])) ||
+        // Action: Edit Caption
+        (incoming().author.uid == request.auth.uid && incoming().diff(existing()).affectedKeys().hasOnly(['caption']))
+      );
+      allow delete: if isSignedIn() && existing().author.uid == request.auth.uid;
+    }
+
+    // Story Rules
+    match /stories/{storyId} {
+      allow read: if isSignedIn();
+      allow create: if isSignedIn() && incoming().author.uid == request.auth.uid;
+      allow update: if isSignedIn() && incoming().diff(existing()).affectedKeys().hasOnly(['viewedBy']);
+      allow delete: if isSignedIn() && existing().author.uid == request.auth.uid;
+    }
+  }
+}

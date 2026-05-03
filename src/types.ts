@@ -1,4 +1,5 @@
 export interface Author {
+  uid: string;
   name: string;
   avatar: string;
 }
@@ -9,7 +10,11 @@ export interface Post {
   caption: string;
   author: Author;
   likes: number;
+  likedBy?: string[];
+  savedBy?: string[];
   createdAt: number;
+  isLiked?: boolean;
+  isSaved?: boolean;
 }
 
 export interface Story {
@@ -18,4 +23,5 @@ export interface Story {
   author: Author;
   createdAt: number;
   isViewed: boolean;
+  viewedBy?: string[];
 }

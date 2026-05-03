@@ -6,20 +6,22 @@ import { Post } from '../types';
 interface PostCardProps {
   post: Post;
   onLike?: (id: string) => void;
+  onSave?: (id: string) => void;
 }
 
-const PostCard: FC<PostCardProps> = ({ post, onLike }) => {
-  const [isLiked, setIsLiked] = useState(false);
+const PostCard: FC<PostCardProps> = ({ post, onLike, onSave }) => {
   const [showHeartOverlay, setShowHeartOverlay] = useState(false);
 
   const handleLike = () => {
-    setIsLiked(!isLiked);
     if (onLike) onLike(post.id);
   };
 
+  const handleSave = () => {
+    if (onSave) onSave(post.id);
+  };
+
   const handleDoubleTap = () => {
-    if (!isLiked) {
-      setIsLiked(true);
+    if (!post.isLiked) {
       if (onLike) onLike(post.id);
     }
     setShowHeartOverlay(true);
@@ -83,7 +85,7 @@ const PostCard: FC<PostCardProps> = ({ post, onLike }) => {
               whileTap={{ scale: 1.4 }}
               onClick={handleLike}
             >
-              <Heart className={`h-6 w-6 transition-colors ${isLiked ? 'fill-red-500 text-red-500' : 'hover:text-gray-600'}`} />
+              <Heart className={`h-6 w-6 transition-colors ${post.isLiked ? 'fill-red-500 text-red-500' : 'hover:text-gray-600'}`} />
             </motion.button>
             <motion.button whileTap={{ scale: 1.2 }}>
               <MessageCircle className="h-6 w-6 hover:text-gray-600" />
@@ -92,14 +94,17 @@ const PostCard: FC<PostCardProps> = ({ post, onLike }) => {
               <Send className="h-6 w-6 hover:text-gray-600" />
             </motion.button>
           </div>
-          <motion.button whileTap={{ scale: 1.2 }}>
-            <Bookmark className="h-6 w-6 hover:text-gray-600" />
+          <motion.button 
+            whileTap={{ scale: 1.2 }}
+            onClick={handleSave}
+          >
+            <Bookmark className={`h-6 w-6 transition-colors ${post.isSaved ? 'fill-black text-black' : 'hover:text-gray-600'}`} />
           </motion.button>
         </div>
 
         {/* Likes and Caption */}
         <div className="space-y-1">
-          <p className="text-sm font-bold">{(post.likes + (isLiked ? 1 : 0)).toLocaleString()} likes</p>
+          <p className="text-sm font-bold">{post.likes.toLocaleString()} likes</p>
           <p className="text-sm">
             <span className="mr-2 font-bold">{post.author.name}</span>
             {post.caption}
